@@ -9,7 +9,7 @@ python-dateutil>=2.8.2
 # SQLite встроен в Python, дополнительные пакеты не нужны
 
 # Для PostgreSQL (опционально)
-# psycopg2-binary>=2.9.7
+psycopg2-binary>=2.9.7
 
 # Для логирования и конфигурации
 # Встроенные модули Python: logging, json
@@ -33,5 +33,7 @@ matplotlib>=3.7.0
 
 Flask>=2.3.2
 Flask-Cors>=4.0.0
+
+
 
 

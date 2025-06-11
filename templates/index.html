@@ -6,6 +6,9 @@
 <button type="button" class="btn btn-primary" onclick="runCollection()">
     <i class="fas fa-play"></i> Запустить сбор данных
 </button>
+<button type="button" class="btn btn-success" onclick="addProfile()">
+    <i class="fas fa-plus"></i> Добавить профиль
+</button>
 {% endblock %}
 
 {% block content %}
@@ -58,7 +61,8 @@
                             Общий расход
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            ${{ "%.2f"|format(total_spend_data|sum(attribute='total_spend')|default(0)) }}
+                            {% set total_spend = total_spend_data|sum(attribute='total_spend') %}
+                            ${{ "%.2f"|format(total_spend or 0) }}
                         </div>
                     </div>
                     <div class="col-auto">
@@ -78,7 +82,7 @@
                             Всего объявлений
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ total_spend_data|sum(attribute='total_ads')|default(0) }}
+                            {{ total_spend_data|sum(attribute='total_ads') or 0 }}
                         </div>
                     </div>
                     <div class="col-auto">
@@ -90,102 +94,201 @@
     </div>
 </div>
 
-<!-- Таблица профилей -->
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Профили</h6>
-    </div>
-    <div class="card-body">
-        {% if profiles %}
-        <div class="table-responsive">
-            <table class="table table-bordered" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>ID Профиля</th>
-                        <th>Рекламный аккаунт</th>
-                        <th>Валюта</th>
-                        <th>Статус</th>
-                        <th>Последнее обновление</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for profile in profiles %}
-                    <tr>
-                        <td>{{ profile.profile_id }}</td>
-                        <td>{{ profile.ad_account_id }}</td>
-                        <td>{{ profile.currency }}</td>
-                        <td>
-                            {% if profile.is_active %}
-                                <span class="badge bg-success">Активен</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Неактивен</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ profile.updated_at }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Быстрое добавление профиля -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Быстрое добавление профиля</h6>
+            </div>
+            <div class="card-body">
+                <form id="quickAddProfileForm" onsubmit="quickAddProfile(event)">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="quick_profile_id">ID профиля</label>
+                                <input type="text" class="form-control" id="quick_profile_id" name="profile_id" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="quick_ad_account_id">ID рекламного аккаунта</label>
+                                <input type="text" class="form-control" id="quick_ad_account_id" name="ad_account_id" required>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="quick_currency">Валюта</label>
+                                <select class="form-control" id="quick_currency" name="currency">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="RUB">RUB</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="quick_is_active">Активен</label>
+                                <select class="form-control" id="quick_is_active" name="is_active">
+                                    <option value="true">Да</option>
+                                    <option value="false">Нет</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-plus"></i> Добавить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-        {% else %}
-        <div class="text-center py-4">
-            <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
-            <p class="text-muted">Профили не найдены. <a href="{{ url_for('profiles') }}">Добавить профиль</a></p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
-<!-- Статистика по расходам -->
-{% if total_spend_data %}
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Статистика по расходам</h6>
+<!-- Таблица профилей -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Профили</h6>
+            </div>
+            <div class="card-body">
+                {% if profiles %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="profilesTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID профиля</th>
+                                <th>ID рекламного аккаунта</th>
+                                <th>Валюта</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for profile in profiles %}
+                            <tr>
+                                <td>{{ profile.profile_id }}</td>
+                                <td>{{ profile.ad_account_id }}</td>
+                                <td>{{ profile.currency }}</td>
+                                <td>
+                                    {% if profile.is_active %}
+                                        <span class="badge badge-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Неактивен</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ profile.created_at.strftime('%d.%m.%Y %H:%M') if profile.created_at else 'Н/Д' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editProfile('{{ profile.profile_id }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteProfile('{{ profile.profile_id }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <p class="text-muted">Профили не найдены. Добавьте первый профиль, используя форму выше.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>ID Профиля</th>
-                        <th>Рекламный аккаунт</th>
-                        <th>Объявлений</th>
-                        <th>Общий расход</th>
-                        <th>Показы</th>
-                        <th>Клики</th>
-                        <th>Валюта</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for data in total_spend_data %}
-                    <tr>
-                        <td>{{ data.profile_id }}</td>
-                        <td>{{ data.ad_account_id }}</td>
-                        <td>{{ data.total_ads }}</td>
-                        <td>${{ "%.2f"|format(data.total_spend) }}</td>
-                        <td>{{ "{:,}".format(data.total_impressions) }}</td>
-                        <td>{{ "{:,}".format(data.total_clicks) }}</td>
-                        <td>{{ data.currency }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+</div>
+
+<!-- Статистика по профилям -->
+{% if total_spend_data %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика по профилям</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID профиля</th>
+                                <th>ID рекламного аккаунта</th>
+                                <th>Общий расход</th>
+                                <th>Валюта</th>
+                                <th>Объявлений</th>
+                                <th>Показы</th>
+                                <th>Клики</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in total_spend_data %}
+                            <tr>
+                                <td>{{ stat.profile_id }}</td>
+                                <td>{{ stat.ad_account_id }}</td>
+                                <td>${{ "%.2f"|format(stat.total_spend or 0) }}</td>
+                                <td>{{ stat.currency }}</td>
+                                <td>{{ stat.total_ads or 0 }}</td>
+                                <td>{{ "{:,}".format(stat.total_impressions or 0) }}</td>
+                                <td>{{ "{:,}".format(stat.total_clicks or 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 {% endif %}
-{% endblock %}
 
-{% block scripts %}
 <script>
+// Функция для быстрого добавления профиля
+function quickAddProfile(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const profileData = {
+        profile_id: formData.get('profile_id'),
+        ad_account_id: formData.get('ad_account_id'),
+        currency: formData.get('currency'),
+        is_active: formData.get('is_active') === 'true'
+    };
+    
+    fetch('/api/profiles', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Ошибка: ' + data.error);
+        } else {
+            alert('Профиль успешно добавлен!');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при добавлении профиля');
+    });
+}
+
+// Функция для запуска сбора данных
 function runCollection() {
-    if (confirm('Запустить сбор данных? Это может занять некоторое время.')) {
-        const button = event.target;
-        const originalText = button.innerHTML;
-        
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Выполняется...';
-        button.disabled = true;
-        
+    if (confirm('Запустить сбор данных для всех активных профилей?')) {
         fetch('/api/run-collection', {
             method: 'POST',
             headers: {
@@ -197,21 +300,46 @@ function runCollection() {
             if (data.error) {
                 alert('Ошибка: ' + data.error);
             } else {
-                alert('Сбор данных запущен успешно!');
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
+                alert('Сбор данных запущен!');
             }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('Произошла ошибка при запуске сбора данных');
-        })
-        .finally(() => {
-            button.innerHTML = originalText;
-            button.disabled = false;
         });
     }
+}
+
+// Функция для редактирования профиля
+function editProfile(profileId) {
+    window.location.href = '/profiles?edit=' + profileId;
+}
+
+// Функция для удаления профиля
+function deleteProfile(profileId) {
+    if (confirm('Вы уверены, что хотите удалить профиль ' + profileId + '?')) {
+        fetch('/api/profiles/' + profileId, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+            } else {
+                alert('Профиль успешно удален!');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при удалении профиля');
+        });
+    }
+}
+
+// Функция для добавления нового профиля (переход на страницу профилей)
+function addProfile() {
+    window.location.href = '/profiles';
 }
 </script>
 {% endblock %}

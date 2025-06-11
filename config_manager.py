@@ -25,8 +25,8 @@ class ConfigManager:
         """
         return {
             # Настройки базы данных
-            'database_url': os.getenv('DATABASE_URL', 'facebook_spend_data.db'), # Изменено на относительный путь
-            'database_type': os.getenv('DATABASE_TYPE', 'sqlite'),
+            'database_url': os.getenv('DATABASE_URL', 'postgresql://spend_user:spend_password@facebook-spend-postgres:5432/spend_db'), # Изменено на PostgreSQL
+            'database_type': os.getenv('DATABASE_TYPE', 'postgresql'), # Изменено на PostgreSQL
             
             # Facebook API
             'facebook_access_token': os.getenv('FACEBOOK_ACCESS_TOKEN', ''),
@@ -107,6 +107,5 @@ class ConfigManager:
 
 # Глобальный экземпляр менеджера конфигурации
 config_manager = ConfigManager()
-
 
 

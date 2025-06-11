@@ -30,11 +30,17 @@ logger = logging.getLogger(__name__)
 class FacebookSpendOrchestrator:
     """Главный оркестратор системы"""
     
-    def __init__(self):
+    def __init__(self, config_dict: Optional[Dict[str, Any]] = None):
         """
         Инициализация оркестратора
+        
+        Args:
+            config_dict: Словарь с конфигурацией (опционально)
         """
-        self.config = config_manager.get_all() # Используем config_manager для получения всей конфигурации
+        if config_dict:
+            self.config = config_dict
+        else:
+            self.config = config_manager.get_all() # Используем config_manager для получения всей конфигурации
         
         # Инициализация компонентов
         self.browser_manager = AntiDetectBrowserManager(
@@ -242,6 +248,5 @@ def run_orchestrator():
 
 if __name__ == "__main__":
     run_orchestrator()
-
 
 
