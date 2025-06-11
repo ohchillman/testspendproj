@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block page_title %}Логи системы{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-outline-secondary" onclick="refreshLogs()">
+    <i class="fas fa-sync-alt"></i> Обновить
+</button>
+<button type="button" class="btn btn-outline-warning" onclick="clearLogs()">
+    <i class="fas fa-trash"></i> Очистить
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Логи системы</h6>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="logLevel" class="form-label">Фильтр по уровню:</label>
+                    <select class="form-control" id="logLevel" onchange="filterLogs()">
+                        <option value="">Все уровни</option>
+                        <option value="DEBUG">DEBUG</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARNING">WARNING</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="searchText" class="form-label">Поиск:</label>
+                    <input type="text" class="form-control" id="searchText" placeholder="Введите текст для поиска..." onkeyup="filterLogs()">
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; max-height: 600px; overflow-y: auto;">
+            <pre id="logContent" style="margin: 0; font-family: 'Courier New', monospace; font-size: 0.875rem; white-space: pre-wrap;">{{ log_content }}</pre>
+        </div>
+        
+        {% if not log_content or log_content == "Лог-файл не найден" %}
+        <div class="text-center py-4">
+            <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+            <p class="text-muted">Логи не найдены или файл логов пуст.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow mt-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Информация о логировании</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Файл логов:</strong><br>
+                <small class="text-muted">/app/logs/facebook_spend_collector.log</small>
+            </div>
+            <div class="col-md-4">
+                <strong>Текущий уровень:</strong><br>
+                <span class="badge bg-info">INFO</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Автообновление:</strong><br>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                    <label class="form-check-label" for="autoRefresh">
+                        Каждые 30 сек
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let autoRefreshInterval = null;
+let originalLogContent = `{{ log_content|safe }}`;
+
+function refreshLogs() {
+    fetch('/logs')
+    .then(response => response.text())
+    .then(html => {
+        // Извлекаем содержимое логов из HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const logContent = doc.getElementById('logContent');
+        if (logContent) {
+            originalLogContent = logContent.textContent;
+            document.getElementById('logContent').textContent = originalLogContent;
+            filterLogs(); // Применяем текущие фильтры
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing logs:', error);
+        alert('Ошибка при обновлении логов');
+    });
+}
+
+function clearLogs() {
+    if (confirm('Вы уверены, что хотите очистить логи? Это действие нельзя отменить.')) {
+        // В реальной реализации здесь был бы API вызов для очистки логов
+        alert('Функция очистки логов будет реализована в следующей версии');
+    }
+}
+
+function filterLogs() {
+    const logLevel = document.getElementById('logLevel').value;
+    const searchText = document.getElementById('searchText').value.toLowerCase();
+    const logContent = document.getElementById('logContent');
+    
+    let filteredContent = originalLogContent;
+    
+    if (logLevel || searchText) {
+        const lines = originalLogContent.split('\n');
+        const filteredLines = lines.filter(line => {
+            let matchesLevel = true;
+            let matchesSearch = true;
+            
+            if (logLevel) {
+                matchesLevel = line.includes(logLevel);
+            }
+            
+            if (searchText) {
+                matchesSearch = line.toLowerCase().includes(searchText);
+            }
+            
+            return matchesLevel && matchesSearch;
+        });
+        
+        filteredContent = filteredLines.join('\n');
+    }
+    
+    logContent.textContent = filteredContent;
+    
+    // Прокручиваем вниз
+    const container = logContent.parentElement;
+    container.scrollTop = container.scrollHeight;
+}
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        autoRefreshInterval = setInterval(refreshLogs, 30000); // 30 секунд
+        console.log('Автообновление логов включено');
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+        console.log('Автообновление логов выключено');
+    }
+}
+
+// Автоматически прокручиваем вниз при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('logContent').parentElement;
+    container.scrollTop = container.scrollHeight;
+});
+
+// Очищаем интервал при уходе со страницы
+window.addEventListener('beforeunload', function() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block page_title %}Настройки системы{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Основные настройки</h6>
+            </div>
+            <div class="card-body">
+                <form id="settingsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="facebook_access_token" class="form-label">Facebook Access Token</label>
+                                <input type="password" class="form-control" id="facebook_access_token" name="facebook_access_token" value="{{ config.facebook_access_token }}">
+                                <div class="form-text">Токен доступа к Facebook Graph API</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="facebook_api_version" class="form-label">Версия Facebook API</label>
+                                <input type="text" class="form-control" id="facebook_api_version" name="facebook_api_version" value="{{ config.facebook_api_version }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="anti_detect_browser_api_url" class="form-label">URL API антидетект-браузера</label>
+                                <input type="text" class="form-control" id="anti_detect_browser_api_url" name="anti_detect_browser_api_url" value="{{ config.anti_detect_browser_api_url }}">
+                                <div class="form-text">Обычно http://host.docker.internal:3001/v1.0 для Dolphin Anty</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="anti_detect_browser_type" class="form-label">Тип антидетект-браузера</label>
+                                <select class="form-control" id="anti_detect_browser_type" name="anti_detect_browser_type">
+                                    <option value="dolphin_anty" {% if config.anti_detect_browser_type == 'dolphin_anty' %}selected{% endif %}>Dolphin Anty</option>
+                                    <option value="adspower" {% if config.anti_detect_browser_type == 'adspower' %}selected{% endif %}>AdsPower</option>
+                                    <option value="undetectable" {% if config.anti_detect_browser_type == 'undetectable' %}selected{% endif %}>Undetectable.io</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="days_back" class="form-label">Дней назад для сбора</label>
+                                <input type="number" class="form-control" id="days_back" name="days_back" value="{{ config.days_back }}" min="1" max="90">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="delay_between_profiles" class="form-label">Задержка между профилями (сек)</label>
+                                <input type="number" class="form-control" id="delay_between_profiles" name="delay_between_profiles" value="{{ config.delay_between_profiles }}" min="1" max="300">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="scheduler_interval_hours" class="form-label">Интервал планировщика (часы)</label>
+                                <input type="number" class="form-control" id="scheduler_interval_hours" name="scheduler_interval_hours" value="{{ config.scheduler_interval_hours }}" min="1" max="24">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="daily_breakdown" name="daily_breakdown" {% if config.daily_breakdown %}checked{% endif %}>
+                                    <label class="form-check-label" for="daily_breakdown">
+                                        Ежедневная разбивка данных
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="scheduler_enabled" name="scheduler_enabled" {% if config.scheduler_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="scheduler_enabled">
+                                        Включить автоматический планировщик
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="log_level" class="form-label">Уровень логирования</label>
+                        <select class="form-control" id="log_level" name="log_level">
+                            <option value="DEBUG" {% if config.log_level == 'DEBUG' %}selected{% endif %}>DEBUG</option>
+                            <option value="INFO" {% if config.log_level == 'INFO' %}selected{% endif %}>INFO</option>
+                            <option value="WARNING" {% if config.log_level == 'WARNING' %}selected{% endif %}>WARNING</option>
+                            <option value="ERROR" {% if config.log_level == 'ERROR' %}selected{% endif %}>ERROR</option>
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> Сохранить настройки
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о системе</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Тип базы данных:</strong><br>
+                    <span class="badge bg-info">{{ config.database_type.upper() }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>URL базы данных:</strong><br>
+                    <small class="text-muted">{{ config.database_url[:50] }}...</small>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Хост Flask:</strong><br>
+                    <code>{{ config.flask_host }}:{{ config.flask_port }}</code>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Файл логов:</strong><br>
+                    <small class="text-muted">{{ config.log_file }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Быстрые действия</h6>
+            </div>
+            <div class="card-body">
+                <button type="button" class="btn btn-outline-primary btn-sm mb-2 w-100" onclick="testFacebookConnection()">
+                    <i class="fas fa-plug"></i> Тест подключения к Facebook API
+                </button>
+                
+                <button type="button" class="btn btn-outline-info btn-sm mb-2 w-100" onclick="testBrowserConnection()">
+                    <i class="fas fa-browser"></i> Тест подключения к антидетект-браузеру
+                </button>
+                
+                <button type="button" class="btn btn-outline-warning btn-sm mb-2 w-100" onclick="clearLogs()">
+                    <i class="fas fa-trash"></i> Очистить логи
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveSettings() {
+    const form = document.getElementById('settingsForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    // Преобразуем checkbox значения
+    data.daily_breakdown = document.getElementById('daily_breakdown').checked;
+    data.scheduler_enabled = document.getElementById('scheduler_enabled').checked;
+    
+    // Преобразуем числовые значения
+    data.days_back = parseInt(data.days_back);
+    data.delay_between_profiles = parseInt(data.delay_between_profiles);
+    data.scheduler_interval_hours = parseInt(data.scheduler_interval_hours);
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Ошибка: ' + data.error);
+        } else {
+            alert('Настройки успешно сохранены!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при сохранении настроек');
+    });
+}
+
+function testFacebookConnection() {
+    alert('Функция тестирования подключения к Facebook API будет реализована в следующей версии');
+}
+
+function testBrowserConnection() {
+    alert('Функция тестирования подключения к антидетект-браузеру будет реализована в следующей версии');
+}
+
+function clearLogs() {
+    if (confirm('Вы уверены, что хотите очистить логи?')) {
+        alert('Функция очистки логов будет реализована в следующей версии');
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block page_title %}Дашборд{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-primary" onclick="runCollection()">
+    <i class="fas fa-play"></i> Запустить сбор данных
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Статистические карточки -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2 card-stats">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Всего профилей
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ profiles|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2 card-stats">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Активных профилей
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ profiles|selectattr('is_active')|list|length }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2 card-stats">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Общий расход
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            ${{ "%.2f"|format(total_spend_data|sum(attribute='total_spend')|default(0)) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2 card-stats">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Всего объявлений
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ total_spend_data|sum(attribute='total_ads')|default(0) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-ad fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица профилей -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Профили</h6>
+    </div>
+    <div class="card-body">
+        {% if profiles %}
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID Профиля</th>
+                        <th>Рекламный аккаунт</th>
+                        <th>Валюта</th>
+                        <th>Статус</th>
+                        <th>Последнее обновление</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in profiles %}
+                    <tr>
+                        <td>{{ profile.profile_id }}</td>
+                        <td>{{ profile.ad_account_id }}</td>
+                        <td>{{ profile.currency }}</td>
+                        <td>
+                            {% if profile.is_active %}
+                                <span class="badge bg-success">Активен</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ profile.updated_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
+            <p class="text-muted">Профили не найдены. <a href="{{ url_for('profiles') }}">Добавить профиль</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Статистика по расходам -->
+{% if total_spend_data %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Статистика по расходам</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID Профиля</th>
+                        <th>Рекламный аккаунт</th>
+                        <th>Объявлений</th>
+                        <th>Общий расход</th>
+                        <th>Показы</th>
+                        <th>Клики</th>
+                        <th>Валюта</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in total_spend_data %}
+                    <tr>
+                        <td>{{ data.profile_id }}</td>
+                        <td>{{ data.ad_account_id }}</td>
+                        <td>{{ data.total_ads }}</td>
+                        <td>${{ "%.2f"|format(data.total_spend) }}</td>
+                        <td>{{ "{:,}".format(data.total_impressions) }}</td>
+                        <td>{{ "{:,}".format(data.total_clicks) }}</td>
+                        <td>{{ data.currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function runCollection() {
+    if (confirm('Запустить сбор данных? Это может занять некоторое время.')) {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Выполняется...';
+        button.disabled = true;
+        
+        fetch('/api/run-collection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+            } else {
+                alert('Сбор данных запущен успешно!');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при запуске сбора данных');
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block page_title %}Управление профилями{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfileModal">
+    <i class="fas fa-plus"></i> Добавить профиль
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Профили антидетект-браузера</h6>
+    </div>
+    <div class="card-body">
+        {% if profiles %}
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID Профиля</th>
+                        <th>Рекламный аккаунт</th>
+                        <th>Валюта</th>
+                        <th>Прокси</th>
+                        <th>Ad IDs</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in profiles %}
+                    <tr>
+                        <td>{{ profile.profile_id }}</td>
+                        <td>{{ profile.ad_account_id }}</td>
+                        <td>{{ profile.currency }}</td>
+                        <td>
+                            {% if profile.proxy_url %}
+                                <span class="badge bg-success">Настроен</span>
+                            {% else %}
+                                <span class="badge bg-warning">Не настроен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if profile.ad_ids %}
+                                {{ profile.ad_ids.split(',')|length }} ID
+                            {% else %}
+                                Все объявления
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if profile.is_active %}
+                                <span class="badge bg-success">Активен</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editProfile('{{ profile.profile_id }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProfile('{{ profile.profile_id }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
+            <p class="text-muted">Профили не найдены. Добавьте первый профиль для начала работы.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно добавления профиля -->
+<div class="modal fade" id="addProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить профиль</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProfileForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="profile_id" class="form-label">ID Профиля антидетект-браузера *</label>
+                                <input type="text" class="form-control" id="profile_id" name="profile_id" required>
+                                <div class="form-text">UUID профиля из антидетект-браузера</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ad_account_id" class="form-label">ID Рекламного аккаунта *</label>
+                                <input type="text" class="form-control" id="ad_account_id" name="ad_account_id" required>
+                                <div class="form-text">ID аккаунта Facebook без префикса "act_"</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">Валюта</label>
+                                <select class="form-control" id="currency" name="currency">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="RUB">RUB</option>
+                                    <option value="GBP">GBP</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="is_active" class="form-label">Статус</label>
+                                <select class="form-control" id="is_active" name="is_active">
+                                    <option value="true">Активен</option>
+                                    <option value="false">Неактивен</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proxy_url" class="form-label">URL Прокси</label>
+                        <input type="text" class="form-control" id="proxy_url" name="proxy_url" placeholder="socks5://user:pass@proxy.example.com:1080">
+                        <div class="form-text">Оставьте пустым, если прокси управляется антидетект-браузером</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ad_ids" class="form-label">ID Объявлений (опционально)</label>
+                        <textarea class="form-control" id="ad_ids" name="ad_ids" rows="3" placeholder="23847562345678901,23847562345678902"></textarea>
+                        <div class="form-text">Список ID объявлений через запятую. Оставьте пустым для сбора данных по всем объявлениям аккаунта</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfile()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования профиля -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать профиль</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <input type="hidden" id="edit_profile_id" name="profile_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_ad_account_id" class="form-label">ID Рекламного аккаунта *</label>
+                                <input type="text" class="form-control" id="edit_ad_account_id" name="ad_account_id" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_currency" class="form-label">Валюта</label>
+                                <select class="form-control" id="edit_currency" name="currency">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="RUB">RUB</option>
+                                    <option value="GBP">GBP</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_is_active" class="form-label">Статус</label>
+                        <select class="form-control" id="edit_is_active" name="is_active">
+                            <option value="true">Активен</option>
+                            <option value="false">Неактивен</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_proxy_url" class="form-label">URL Прокси</label>
+                        <input type="text" class="form-control" id="edit_proxy_url" name="proxy_url">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_ad_ids" class="form-label">ID Объявлений (опционально)</label>
+                        <textarea class="form-control" id="edit_ad_ids" name="ad_ids" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateProfile()">Обновить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveProfile() {
+    const form = document.getElementById('addProfileForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    // Преобразуем is_active в boolean
+    data.is_active = data.is_active === 'true';
+    
+    fetch('/api/profiles', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Ошибка: ' + data.error);
+        } else {
+            alert('Профиль успешно добавлен!');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при добавлении профиля');
+    });
+}
+
+function editProfile(profileId) {
+    // Получаем данные профиля
+    fetch('/api/profiles')
+    .then(response => response.json())
+    .then(profiles => {
+        const profile = profiles.find(p => p.profile_id === profileId);
+        if (profile) {
+            // Заполняем форму редактирования
+            document.getElementById('edit_profile_id').value = profile.profile_id;
+            document.getElementById('edit_ad_account_id').value = profile.ad_account_id;
+            document.getElementById('edit_currency').value = profile.currency;
+            document.getElementById('edit_is_active').value = profile.is_active ? 'true' : 'false';
+            document.getElementById('edit_proxy_url').value = profile.proxy_url || '';
+            document.getElementById('edit_ad_ids').value = profile.ad_ids || '';
+            
+            // Показываем модальное окно
+            new bootstrap.Modal(document.getElementById('editProfileModal')).show();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при загрузке данных профиля');
+    });
+}
+
+function updateProfile() {
+    const form = document.getElementById('editProfileForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    const profileId = data.profile_id;
+    
+    // Преобразуем is_active в boolean
+    data.is_active = data.is_active === 'true';
+    
+    fetch(`/api/profiles/${profileId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Ошибка: ' + data.error);
+        } else {
+            alert('Профиль успешно обновлен!');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при обновлении профиля');
+    });
+}
+
+function deleteProfile(profileId) {
+    if (confirm('Вы уверены, что хотите удалить этот профиль?')) {
+        fetch(`/api/profiles/${profileId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+            } else {
+                alert('Профиль успешно удален!');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при удалении профиля');
+        });
+    }
+}
+</script>
+{% endblock %}
+

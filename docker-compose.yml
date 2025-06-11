@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Основное приложение с веб-интерфейсом
+  facebook-spend-app:
+    build: .
+    container_name: facebook-spend-app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=false
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+    networks:
+      - facebook-spend-network
+    restart: unless-stopped
+
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: facebook-spend-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - facebook-spend-network
+    restart: unless-stopped
+
+  # Планировщик задач (cron-like)
+  scheduler:
+    build: .
+    container_name: facebook-spend-scheduler
+    command: python scheduler_service.py
+    environment:
+      - FLASK_ENV=production
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - facebook-spend-app
+    networks:
+      - facebook-spend-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  facebook-spend-network:
+    driver: bridge
+
