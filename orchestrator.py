@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional
 from anti_detect_browser_manager import AntiDetectBrowserManager
 from facebook_api_client import FacebookAPIClient
 from database_manager import DatabaseManager
+from config_manager import config_manager # Импортируем глобальный экземпляр ConfigManager
 
 # Настройка логирования
 logging.basicConfig(
@@ -29,14 +30,11 @@ logger = logging.getLogger(__name__)
 class FacebookSpendOrchestrator:
     """Главный оркестратор системы"""
     
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self):
         """
         Инициализация оркестратора
-        
-        Args:
-            config_path: Путь к файлу конфигурации
         """
-        self.config = self.load_config(config_path)
+        self.config = config_manager.get_all() # Используем config_manager для получения всей конфигурации
         
         # Инициализация компонентов
         self.browser_manager = AntiDetectBrowserManager(
@@ -49,31 +47,32 @@ class FacebookSpendOrchestrator:
         )
         
         self.db_manager = DatabaseManager(
-            db_path=self.config.get('database_path', 'facebook_spend_data.db'),
+            db_path=self.config.get('database_url', 'facebook_spend_data.db'), # Изменено на database_url
             db_type=self.config.get('database_type', 'sqlite')
         )
         
-    def load_config(self, config_path: str) -> Dict[str, Any]:
-        """
-        Загружает конфигурацию из JSON файла
-        
-        Args:
-            config_path: Путь к файлу конфигурации
-            
-        Returns:
-            Словарь с конфигурацией
-        """
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-                logger.info(f"Конфигурация загружена из {config_path}")
-                return config
-        except FileNotFoundError:
-            logger.error(f"Файл конфигурации {config_path} не найден")
-            raise
-        except json.JSONDecodeError as e:
-            logger.error(f"Ошибка при парсинге JSON конфигурации: {e}")
-            raise
+    # Удаляем метод load_config, так как конфигурация теперь загружается через ConfigManager
+    # def load_config(self, config_path: str) -> Dict[str, Any]:
+    #     """
+    #     Загружает конфигурацию из JSON файла
+    #     
+    #     Args:
+    #         config_path: Путь к файлу конфигурации
+    #         
+    #     Returns:
+    #         Словарь с конфигурацией
+    #     """
+    #     try:
+    #         with open(config_path, 'r', encoding='utf-8') as f:
+    #             config = json.load(f)
+    #             logger.info(f"Конфигурация загружена из {config_path}")
+    #             return config
+    #     except FileNotFoundError:
+    #         logger.error(f"Файл конфигурации {config_path} не найден")
+    #         raise
+    #     except json.JSONDecodeError as e:
+    #         logger.error(f"Ошибка при парсинге JSON конфигурации: {e}")
+    #         raise
             
     def get_date_range(self) -> tuple:
         """
@@ -201,7 +200,9 @@ class FacebookSpendOrchestrator:
                 logger.error(f"Ошибка при закрытии профиля {profile_id}: {e}")
                 
     def run(self):
-        """Главный метод запуска сбора данных"""
+        """
+        Главный метод запуска сбора данных
+        """
         logger.info("Запуск системы сбора данных Facebook Ad Spend")
         
         try:
@@ -241,4 +242,6 @@ def run_orchestrator():
 
 if __name__ == "__main__":
     run_orchestrator()
+
+
 

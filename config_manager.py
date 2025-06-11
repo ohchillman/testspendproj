@@ -11,7 +11,9 @@ class ConfigManager:
     """Менеджер конфигурации для чтения настроек из переменных окружения"""
     
     def __init__(self):
-        """Инициализация менеджера конфигурации"""
+        """
+        Инициализация менеджера конфигурации
+        """
         self.config = self._load_config()
     
     def _load_config(self) -> Dict[str, Any]:
@@ -23,7 +25,7 @@ class ConfigManager:
         """
         return {
             # Настройки базы данных
-            'database_url': os.getenv('DATABASE_URL', 'sqlite:///facebook_spend_data.db'),
+            'database_url': os.getenv('DATABASE_URL', 'facebook_spend_data.db'), # Изменено на относительный путь
             'database_type': os.getenv('DATABASE_TYPE', 'sqlite'),
             
             # Facebook API
@@ -105,4 +107,6 @@ class ConfigManager:
 
 # Глобальный экземпляр менеджера конфигурации
 config_manager = ConfigManager()
+
+
 
